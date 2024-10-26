@@ -3,7 +3,7 @@ import multer from 'multer';
 import firebaseAdmin from 'firebase-admin';
 import fs from 'fs';
 import cors from 'cors';
-import { extractTextFromPdf, evaluateStudentAnswerSheet } from './utils.js';
+import { extractTextFromPdf, evaluateStudentAnswerSheet, separateAnswers } from './utils.js';
 
 const app = express();
 app.use(cors());
@@ -44,6 +44,9 @@ app.post('/api/evaluate', upload.single('pdfFile'), async (req, res) => {
       subject: answerKey.exam_title, // Make sure this is in your answer key structure
       score: score,
     });
+
+    const ans = separateAnswers(extractedText);
+    
 
     // Clean up uploaded file
     fs.unlinkSync(pdfFilePath);

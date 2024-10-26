@@ -1,0 +1,48 @@
+import { convert } from 'pdf-poppler';
+import fs from 'fs';
+import path from 'path';
+import vision from '@google-cloud/vision';
+
+const client = new vision.ImageAnnotatorClient({
+  keyFilename: 'apt-terrain-439708-k2-0d203cb25f5a.json', // Replace with your key file path
+});
+
+// Extract text from a PDF using Google Vision API
+const extractTextFromPdf = async (pdfFilePath) => {
+  const outputDir = path.join(process.cwd(), 'images');
+
+  // Create output directory if it doesn't exist
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  await convert(pdfFilePath, {
+    out_dir: outputDir,
+    format: 'png',
+  });
+
+  let extractedText = '';
+  const files = fs.readdirSync(outputDir);
+
+  for (const file of files) {
+    const filePath = path.join(outputDir, file);
+
+    // Run text detection on the image
+    const [result] = await client.textDetection(filePath);
+    const textAnnotations = result.textAnnotations;
+    extractedText += textAnnotations.length ? textAnnotations[0].description : '';
+
+    fs.unlinkSync(filePath); // Clean up after OCR
+  }
+
+  return extractedText;
+};
+
+// Evaluate the student's answers based on the extracted text and answer key
+const evaluateStudentAnswerSheet = (extractedText, answerKey) => {
+  let score = 0;
+  // Implement your logic here to compare extractedText with answerKey
+  return score;
+};
+
+export { extractTextFromPdf, evaluateStudentAnswerSheet };

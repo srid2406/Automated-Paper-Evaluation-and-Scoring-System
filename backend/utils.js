@@ -38,12 +38,11 @@ const extractTextFromPdf = async (pdfFilePath) => {
   return extractedText;
 };
 
-
 const separateAnswers = (extractedText) => {
   // Define the regex pattern to split text based on numbered answers, e.g., "1. ", "2. "
   const answerPattern = /\d+\.\s/;
   const answersArray = extractedText.split(answerPattern).filter((answer) => answer.trim() !== '');
-  
+
   const answersMap = new Map();
 
   // Populate the map with question number as key and answer as value
@@ -53,21 +52,15 @@ const separateAnswers = (extractedText) => {
     answersMap.set(questionNumber, answer.trim());
   });
 
-  // Log each question and answer to the console
-  // console.log("Extracted Answers:");
-  // answersMap.forEach((answer, questionNumber) => {
-  //   console.log(`Q${questionNumber}: ${answer}`);
-  // });
-
   return answersMap;
 };
-
 
 // Evaluate the student's answers based on the extracted text and answer key
 // Evaluate the student's answers based on the extracted text and answer key
 const evaluateStudentAnswerSheet = (extractedText, answerKey) => {
   const answersMap = separateAnswers(extractedText);
   let totalScore = 0;
+  const scoreDetails = {}; // Object to store scores for each question
 
   // Function to perform a simple grammar check (for demonstration)
   const simpleGrammarCheck = (answer) => {
@@ -118,10 +111,17 @@ const evaluateStudentAnswerSheet = (extractedText, answerKey) => {
       questionScore = 0;
     }
 
+    // Round the question score to the ceiling
+    questionScore = Math.ceil(questionScore);
+    
     totalScore += questionScore; // Add question score to total score
+    scoreDetails[questionNumber] = questionScore; // Store the rounded score for this question
   });
 
-  return totalScore; // Return the total score
+  // Round the total score to the ceiling
+  totalScore = Math.ceil(totalScore);
+
+  return { totalScore, scoreDetails }; // Return the total score and the score details
 };
 
 

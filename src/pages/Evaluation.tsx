@@ -60,7 +60,7 @@ const Evaluation: React.FC = () => {
       if (response.data.success) {
         // setMessage(`Answer: ${response.data.extractedText}`);
         // setMessage(`Extracted Texts: ${response.data.answers}`);
-        setMessage(`Score: ${response.data.score}`)
+        setMessage(`Score: ${response.data.totalScore}`)
       } else {
         setMessage('Evaluation failed. Please try again.');
       }

@@ -23,7 +23,7 @@ app.post('/api/evaluate', upload.single('pdfFile'), async (req, res) => {
   const pdfFilePath = req.file.path;
 
   try {
-    // Step 1: Extract text from the uploaded PDF using pytesseract
+    // Step 1: Extract text from the uploaded PDF
     const extractedText = await extractTextFromPdf(pdfFilePath);
 
     // Step 2: Fetch answer key from Firestore based on the provided ID
@@ -37,22 +37,42 @@ app.post('/api/evaluate', upload.single('pdfFile'), async (req, res) => {
     const answerKey = answerKeyDoc.data();
 
     // Step 3: Evaluate student's answers
-    const score = evaluateStudentAnswerSheet(extractedText, answerKey);
+    const { totalScore, scoreDetails } = evaluateStudentAnswerSheet(extractedText, answerKey);
+    
 
     // Step 4: Store the evaluation results in Firestore
-    await db.collection('studentScores').doc(registrationNumber).set({
+    const scoreData = {
       subject: answerKey.exam_title, // Make sure this is in your answer key structure
-      score: score,
-    });
+      questions: scoreDetails, // Store the detailed scores for each question
+      totalScore: totalScore, // Store the total score
+    };
 
-    const ans = separateAnswers(extractedText);
-    
+    // Check if studentScores document already exists
+    const studentScoresRef = db.collection('studentScores').doc(registrationNumber);
+    const studentScoresDoc = await studentScoresRef.get();
+
+    if (studentScoresDoc.exists) {
+      // If the document exists, update it with the new subject scores
+      await studentScoresRef.update({
+        [answerKey.exam_title]: scoreData,
+      });
+    } else {
+      // If the document does not exist, create a new one
+      await studentScoresRef.set({
+        [answerKey.exam_title]: scoreData,
+      });
+    }
 
     // Clean up uploaded file
     fs.unlinkSync(pdfFilePath);
 
-    return res.json({ success: true, score: score, extractedText: extractedText });
-  } catch (error) {
+    return res.json({
+      success: true,
+      message: 'Evaluation completed successfully.',
+      subject: answerKey.exam_title,
+      totalScore: totalScore,
+      scoreDetails: scoreDetails, // Include the details of each question
+    });  } catch (error) {
     console.error('Error processing the PDF:', error);
     res.status(500).json({ success: false, message: 'Evaluation failed', error: error.message });
   }
